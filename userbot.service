@@ -1,0 +1,30 @@
+[Unit]
+Description=The userbot to help me manage
+After=network.target
+Wants=wg-quick@wg0.service
+
+[Service]
+Type=simple
+User=root
+
+WorkingDirectory=/opt/userbot
+Environment=PATH=/opt/userbot/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=PYTHONPATH=/opt/userbot/.venv/bin/python3
+Environment=WG_CONFIG_PATH=/etc/wireguard
+Environment=PYTHONUNBUFFERED=1
+
+ExecStart=/opt/userbot/.venv/bin/python3 /opt/userbot/main.py
+Restart=on-failure
+RestartSec=15s
+
+# Log
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+ProtectSystem=false
+PrivateTmp=true
+NoNewPrivileges=false
+
+[Install]
+WantedBy=multi-user.target
