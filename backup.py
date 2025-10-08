@@ -29,6 +29,7 @@ FILES_TO_BACKUP = [
     "/etc/zapret",
     "/etc/hosts",
     "/etc/ssh",
+    "/opt/AdGuardHome/data",
     "/opt/userbot/db.sqlite3",
     "/opt/userbot/sessions",
     "/opt/userbot/media",
