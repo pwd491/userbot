@@ -25,6 +25,7 @@ ARCHIVE_NAME = os.path.join(BACKUP_DIR, f"backup-{DATE}.tar.gz")
 
 FILES_TO_BACKUP = [
     "/etc/wireguard",
+    "/etc/sysctl.d/",
     "/etc/zapret",
     "/etc/hosts",
     "/etc/ssh",
