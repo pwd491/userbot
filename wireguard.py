@@ -347,8 +347,15 @@ class WireGuardManager:
         if remove:
             # Remove client section
             if client_section_start is not None:
+                # Remove whitespace before section
+                if (
+                    client_section_start > 0
+                    and lines[client_section_start - 1].strip() == ""
+                ):
+                    client_section_start -= 1
+
                 if client_section_end is not None:
-                    del lines[client_section_start : client_section_end + 1]
+                    del lines[client_section_start:client_section_end]
                 else:
                     # Remove to end of file
                     del lines[client_section_start:]
@@ -614,23 +621,36 @@ AllowedIPs = {allowed_ips}
         old_exists_in_config = self.client_exists(old_name)
         old_exists_in_db = self.db.wireguard_client_exists(old_name)
 
-        self.logger.info("Client '%s' exists - config: %s, database: %s", old_name, old_exists_in_config, old_exists_in_db)
+        self.logger.info(
+            "Client '%s' exists - config: %s, database: %s",
+            old_name,
+            old_exists_in_config,
+            old_exists_in_db,
+        )
 
         if not old_exists_in_config and not old_exists_in_db:
             self.logger.warning("Client '%s' not found in system", old_name)
-            return False, f"Client '{old_name}' not found in system (checked config and database)"
+            return (
+                False,
+                f"Client '{old_name}' not found in system (checked config and database)",
+            )
 
         # Check if new client name already exists
         new_exists_in_config = self.client_exists(new_name)
         new_exists_in_db = self.db.wireguard_client_exists(new_name)
 
-        self.logger.info("Client '%s' exists - config: %s, database: %s", new_name, new_exists_in_config, new_exists_in_db)
+        self.logger.info(
+            "Client '%s' exists - config: %s, database: %s",
+            new_name,
+            new_exists_in_config,
+            new_exists_in_db,
+        )
 
         # If new name exists in database, it's definitely a conflict
         if new_exists_in_db:
             self.logger.warning("Client '%s' already exists in database", new_name)
             return False, f"Client '{new_name}' already exists in database"
-        
+
         # If new name exists only in config, check if it's the same client we're renaming
         if new_exists_in_config:
             # Check if the new name corresponds to the same client we're renaming
@@ -638,24 +658,31 @@ AllowedIPs = {allowed_ips}
             if old_name == new_name:
                 self.logger.info("Renaming client to the same name - no change needed")
                 return True, f"Client '{old_name}' is already named '{new_name}'"
-            
+
             # Get public key of the old client from database
             old_client_data = self.db.get_wireguard_client(old_name)
             if not old_client_data:
                 self.logger.warning("Client '%s' not found in database", old_name)
                 return False, f"Client '{old_name}' not found in database"
-            
+
             old_public_key = old_client_data[3]  # public_key
-            
+
             # Get public key of the client with new name from config
             new_public_key = self._get_client_public_key_from_config(new_name)
-            
+
             if old_public_key == new_public_key:
-                self.logger.info("Client '%s' in config has same public key as '%s' - allowing rename", new_name, old_name)
+                self.logger.info(
+                    "Client '%s' in config has same public key as '%s' - allowing rename",
+                    new_name,
+                    old_name,
+                )
                 # This is the same client, we can proceed with rename
             else:
                 # Different client in config, it's a conflict
-                self.logger.warning("Client '%s' already exists in config with different public key", new_name)
+                self.logger.warning(
+                    "Client '%s' already exists in config with different public key",
+                    new_name,
+                )
                 return False, f"Client '{new_name}' already exists in config"
 
         try:
@@ -720,35 +747,37 @@ AllowedIPs = {allowed_ips}
             if old_config_file.exists():
                 os.remove(old_config_file)
 
-            self.logger.info("Client '%s' successfully renamed to '%s'", old_name, new_name)
+            self.logger.info(
+                "Client '%s' successfully renamed to '%s'", old_name, new_name
+            )
             return True, f"Client '{old_name}' successfully renamed to '{new_name}'"
 
         except Exception as e:
             # Clean up new config file if it was created
-            if 'new_config_file' in locals() and os.path.exists(new_config_file):
+            if "new_config_file" in locals() and os.path.exists(new_config_file):
                 os.remove(new_config_file)
             raise RuntimeError(f"Error renaming client: {e}") from e
 
     def _get_client_public_key_from_config(self, name: str) -> Optional[str]:
         """
         Get client public key from WireGuard configuration file
-        
+
         Args:
             name: Client name
-            
+
         Returns:
             Optional[str]: Public key if found, None otherwise
         """
         try:
             iface = self.server_params.get("SERVER_WG_NIC", "wg0")
             config_file = Path(self.wireguard_dir) / f"{iface}.conf"
-            
+
             if not config_file.exists():
                 return None
-                
+
             with open(config_file, "r", encoding="utf-8") as f:
                 conf = f.read().splitlines()
-                
+
             for i, line in enumerate(conf):
                 if line.startswith("### Client") and name in line:
                     # Look for the public key in the next few lines
@@ -756,7 +785,7 @@ AllowedIPs = {allowed_ips}
                         if conf[j].startswith("PublicKey = "):
                             return conf[j].split("=", 1)[1].strip()
             return None
-            
+
         except (OSError, IOError) as e:
             self.logger.error("Error reading config file: %s", e)
             return None
@@ -871,7 +900,9 @@ AllowedIPs = {allowed_ips}
             self.logger.warning("No clients found")
             return "No clients found"
 
-        header_line = f"{'Имя':<20} {'Активность':<15}" + (f" {'IP':<15}" if print_ip else "")
+        header_line = f"{'Имя':<20} {'Активность':<15}" + (
+            f" {'IP':<15}" if print_ip else ""
+        )
         now = int(time.time())
 
         # Collect client data for sorting
